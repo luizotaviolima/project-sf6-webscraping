@@ -1,7 +1,8 @@
 from functions import site_content, site_target_content, get_web_info, get_character_link, \
     char_detail_text, dataframe, export_to_csv, work_directory, clean_directory
 from datetime import datetime
-import os
+import os, re
+import pandas as pd
 
 
 if __name__ == "__main__":
@@ -33,7 +34,8 @@ if __name__ == "__main__":
     # Clean destiny folder before saving files
     clean_directory(work_directory=dataPath)
 
-    # Extraction all character information
+    # Dataframe for all character information
+    dfStreetFighter = pd.DataFrame()
 
     for characterLink in characterLinkList:
         # Getting character name from list above
@@ -62,9 +64,42 @@ if __name__ == "__main__":
         # Appending timestamp info
         charFullInfo.append(datetime.now())
 
-        # Creating a DataFrame
+        # Creating a Character DataFrame
         dfCharInfo = dataframe(char_full_info=charFullInfo,
                                columns_name=detailColumns)
-
         # Exporting to csv
         export_to_csv(dfCharInfo, charName)
+
+        # Appending all to same file        
+        dfStreetFighter = pd.concat([dfStreetFighter, dfCharInfo])
+
+    # Data manipulation
+    dfStreetFighter = dfStreetFighter.reset_index()
+    dfStreetFighter['id'] = dfStreetFighter.index + 1
+    dfStreetFighter = dfStreetFighter.drop('index', axis=1)
+    dfStreetFighter = dfStreetFighter[['id', 'nome', 'descricao', 'odeia', 'altura', 'peso', 'timestamp']]
+
+    regexHeight = r'([\d\.,]+)'
+
+    def extract_number(x):
+        match = re.search(regexHeight, x)
+        if match is not None:
+            value = match.group(1)
+            return float(value) / 100 if 'cm' in x else float(value)
+        else:
+            return None
+    
+    dfStreetFighter['altura'] = dfStreetFighter['altura'].apply(extract_number)
+
+    regexWeight = r'([\d\.]+)'
+
+    def extract_number(x):
+        try:
+            return int(re.findall(regexWeight, x)[0])
+        except:
+            return None
+
+    dfStreetFighter['peso'] = dfStreetFighter['peso'].apply(extract_number)
+
+    # Exporting to csv
+    export_to_csv(dfStreetFighter, name="StreetFighter6")
