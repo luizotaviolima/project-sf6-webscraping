@@ -84,7 +84,7 @@ if __name__ == "__main__":
     def extract_number(x):
         match = re.search(regexHeight, x)
         if match is not None:
-            value = match.group(1)
+            value = match.group(1).replace(',', '.')
             return float(value) / 100 if 'cm' in x else float(value)
         else:
             return None
